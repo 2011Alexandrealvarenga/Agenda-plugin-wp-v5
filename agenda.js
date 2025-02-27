@@ -2,7 +2,7 @@ jQuery(document).ready(function($) {
   // Inicializa o Flatpickr
   var datePicker = flatpickr('#agenda-date-picker', {
       defaultDate: 'today', // Define a data inicial como hoje
-      dateFormat: 'Y-m-d', // Formato da data
+      dateFormat: 'd/m/Y', // Formato da data (dia/mês/ano)
       onChange: function(selectedDates, dateStr, instance) {
           // Atualiza o input com a data selecionada
           $('#agenda-date-picker').val(dateStr);
@@ -23,7 +23,8 @@ jQuery(document).ready(function($) {
           var prevDate = new Date(currentDate);
           prevDate.setDate(prevDate.getDate() - 1); // Subtrai um dia
           datePicker.setDate(prevDate); // Atualiza o calendário
-          $('#agenda-date-picker').val(prevDate.toISOString().split('T')[0]); // Atualiza o input
+          var formattedDate = formatDate(prevDate); // Formata a data como DD/MM/YYYY
+          $('#agenda-date-picker').val(formattedDate); // Atualiza o input
           loadEvents(prevDate.toISOString().split('T')[0]); // Carrega os eventos
       }
   });
@@ -35,10 +36,19 @@ jQuery(document).ready(function($) {
           var nextDate = new Date(currentDate);
           nextDate.setDate(nextDate.getDate() + 1); // Adiciona um dia
           datePicker.setDate(nextDate); // Atualiza o calendário
-          $('#agenda-date-picker').val(nextDate.toISOString().split('T')[0]); // Atualiza o input
+          var formattedDate = formatDate(nextDate); // Formata a data como DD/MM/YYYY
+          $('#agenda-date-picker').val(formattedDate); // Atualiza o input
           loadEvents(nextDate.toISOString().split('T')[0]); // Carrega os eventos
       }
   });
+
+  // Função para formatar a data como DD/MM/YYYY
+  function formatDate(date) {
+      var day = String(date.getDate()).padStart(2, '0'); // Dia (com zero à esquerda)
+      var month = String(date.getMonth() + 1).padStart(2, '0'); // Mês (com zero à esquerda)
+      var year = date.getFullYear(); // Ano
+      return `${day}/${month}/${year}`; // Retorna a data no formato DD/MM/YYYY
+  }
 
   // Carrega eventos para a data selecionada
   function loadEvents(date) {
