@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+include('functions.php');
+
 // Cria o Custom Post Type "Agenda"
 function agenda_create_post_type() {
     register_post_type('agenda',
