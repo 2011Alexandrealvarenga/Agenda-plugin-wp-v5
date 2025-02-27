@@ -45,33 +45,65 @@ add_action('add_meta_boxes', 'agenda_add_meta_box');
 
 // Callback para exibir o metabox
 function agenda_meta_box_callback($post) {
-    wp_nonce_field('agenda_save_meta_box_data', 'agenda_meta_box_nonce');
-    $value = get_post_meta($post->ID, '_data_evento', true);
-    echo '<label for="data_evento">';
-    _e('Data do Evento:', 'agenda');
-    echo '</label> ';
-    echo '<input type="date" id="data_evento" name="data_evento" value="' . esc_attr($value) . '" size="25" />';
+  wp_nonce_field('agenda_save_meta_box_data', 'agenda_meta_box_nonce');
+
+  $local_value = get_post_meta($post->ID, '_local_value', true);
+  $data_evento = get_post_meta($post->ID, '_data_evento', true);
+  $horario_inicio = get_post_meta($post->ID, '_horario_inicio', true);
+  $horario_final = get_post_meta($post->ID, '_horario_final', true);
+
+?>
+
+<label for="local_value">Local:</label>
+<input type="text" name="local_value" value="<?php echo esc_attr($local_value); ?>" class="widefat" />
+<br>
+
+<label for="data_evento">Data:</label>
+<input type="date" name="data_evento" value="<?php echo esc_attr($data_evento); ?>" class="widefat" />
+<br>
+
+<label for="horario_inicio">Horário de inicio:</label>
+<input type="time" name="horario_inicio" value="<?php echo esc_attr($horario_inicio); ?>" class="widefat" />
+<br>
+
+<label for="horario_final">Horário de encerramento:</label>
+<input type="time" name="horario_final" value="<?php echo esc_attr($horario_final); ?>" class="widefat" />
+<br>
+
+<?php
 }
 
 // Salva os dados do metabox
 function agenda_save_meta_box_data($post_id) {
-    if (!isset($_POST['agenda_meta_box_nonce'])) {
-        return;
-    }
-    if (!wp_verify_nonce($_POST['agenda_meta_box_nonce'], 'agenda_save_meta_box_data')) {
-        return;
-    }
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        return;
-    }
-    if (!current_user_can('edit_post', $post_id)) {
-        return;
-    }
-    if (!isset($_POST['data_evento'])) {
-        return;
-    }
-    $data_evento = sanitize_text_field($_POST['data_evento']);
-    update_post_meta($post_id, '_data_evento', $data_evento);
+  if (!isset($_POST['agenda_meta_box_nonce'])) {
+      return;
+  }
+  if (!wp_verify_nonce($_POST['agenda_meta_box_nonce'], 'agenda_save_meta_box_data')) {
+      return;
+  }
+  if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+      return;
+  }
+  if (!current_user_can('edit_post', $post_id)) {
+      return;
+  }
+  if (isset($_POST['local_value'])) {
+    update_post_meta($post_id, '_local_value', sanitize_text_field($_POST['local_value']));
+  }
+
+  if (isset($_POST['data_evento'])) {
+    update_post_meta($post_id, '_data_evento', sanitize_text_field($_POST['data_evento']));
+  }
+
+  if (isset($_POST['horario_inicio'])) {
+    update_post_meta($post_id, '_horario_inicio', sanitize_text_field($_POST['horario_inicio']));
+  }
+
+  if (isset($_POST['horario_final'])) {
+    update_post_meta($post_id, '_horario_final', sanitize_text_field($_POST['horario_final']));
+  }
+  $data_evento = sanitize_text_field($_POST['data_evento']);
+  update_post_meta($post_id, '_data_evento', $data_evento);
 }
 add_action('save_post', 'agenda_save_meta_box_data');
 
@@ -87,15 +119,42 @@ function agenda_list_events_today($date = null) {
     );
     $query = new WP_Query($args);
     if ($query->have_posts()) {
-        echo '<ul>';
+        
         while ($query->have_posts()) {
             $query->the_post();
-            echo '<li><a href="' . get_permalink() . '">' . get_the_title() . '</a></li>';
-        }
-        echo '</ul>';
+
+              $evento_data = get_post_meta(get_the_ID(), '_data_evento', true);
+              $local_value = get_post_meta(get_the_ID(), '_local_value', true);
+              $horario_inicio = get_post_meta(get_the_ID(), '_horario_inicio', true);
+              $horario_final = get_post_meta(get_the_ID(), '_horario_final', true);
+              if ($evento_data) {
+                  $evento_data_formatada = date('d/m/Y', strtotime($evento_data)); 
+              }
+            ?>
+             <p>novo testees</p>
+             
+
+               <div class="agenda-post">
+                 <div class="content-inside">
+                   <div class="data-left">
+                       <span class="day"><?php echo date('d', strtotime($evento_data)); ?></span>
+                       <span class="month"><b><?php echo ucfirst(date_i18n('M', strtotime($evento_data))); ?></b></span>
+                       <span class="year"><b><?php echo date_i18n('Y', strtotime($evento_data));?></b></span>
+                   </div>
+                   <div class="content-date">                                 
+                       <span class="local"><span class="local"><?php echo date('H:i', strtotime($horario_inicio));?></span> - <span class="local"><?php echo date('H:i', strtotime($horario_final));?></span></span>
+                       <h3 class="title"><?php echo get_the_title(); ?></h3>
+                       <span class="local"><?php echo $local_value;?></span>    
+                   </div>
+                 </div>
+               </div>
+        <?php
+        
+            }
     } else {
         echo '<p>Nenhum evento para este dia.</p>';
     }
+    
     wp_reset_postdata();
 }
 
@@ -149,15 +208,41 @@ function agenda_load_events() {
     );
     $query = new WP_Query($args);
     if ($query->have_posts()) {
-        echo '<ul>';
-        while ($query->have_posts()) {
-            $query->the_post();
-            echo '<li><a href="' . get_permalink() . '">' . get_the_title() . '</a></li>';
-        }
-        echo '</ul>';
-    } else {
-        echo '<p>Nenhum evento para este dia.</p>';
-    }
+        
+      while ($query->have_posts()) {
+          $query->the_post();
+
+            $evento_data = get_post_meta(get_the_ID(), '_data_evento', true);
+            $local_value = get_post_meta(get_the_ID(), '_local_value', true);
+            $horario_inicio = get_post_meta(get_the_ID(), '_horario_inicio', true);
+            $horario_final = get_post_meta(get_the_ID(), '_horario_final', true);
+            if ($evento_data) {
+                $evento_data_formatada = date('d/m/Y', strtotime($evento_data)); 
+            }
+          ?>
+           <p>novo testees 123</p>
+           
+
+             <div class="agenda-post">
+               <div class="content-inside">
+                 <div class="data-left">
+                     <span class="day"><?php echo date('d', strtotime($evento_data)); ?></span>
+                     <span class="month"><b><?php echo ucfirst(date_i18n('M', strtotime($evento_data))); ?></b></span>
+                     <span class="year"><b><?php echo date_i18n('Y', strtotime($evento_data));?></b></span>
+                 </div>
+                 <div class="content-date">                                 
+                     <span class="local"><span class="local"><?php echo date('H:i', strtotime($horario_inicio));?></span> - <span class="local"><?php echo date('H:i', strtotime($horario_final));?></span></span>
+                     <h3 class="title"><?php echo get_the_title(); ?></h3>
+                     <span class="local"><?php echo $local_value;?></span>    
+                 </div>
+               </div>
+             </div>
+      <?php
+      
+          }
+  } else {
+      echo '<p>Nenhum evento para este dia.</p>';
+  }
     wp_reset_postdata();
     wp_die();
 }
