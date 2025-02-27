@@ -7,6 +7,12 @@ jQuery(document).ready(function($) {
           // Atualiza o input com a data selecionada
           $('#agenda-date-picker').val(dateStr);
           loadEvents(dateStr); // Carrega os eventos para a data selecionada
+      },
+      onDayCreate: function(dObj, dStr, fp, dayElem) {
+          // Destaca os dias que têm eventos
+          if (agenda_event_dates.includes(dayElem.dateObj.toISOString().split('T')[0])) {
+              dayElem.classList.add('event-day'); // Adiciona uma classe para destacar
+          }
       }
   });
 

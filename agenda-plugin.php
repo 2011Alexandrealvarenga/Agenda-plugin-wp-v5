@@ -135,7 +135,7 @@ function agenda_enqueue_scripts() {
 }
 add_action('wp_enqueue_scripts', 'agenda_enqueue_scripts');
 
-// Função para carregar eventos via AJAX
+// Função para carregar eventos via agenda_get_event_dates
 function agenda_load_events() {
     $date = sanitize_text_field($_POST['date']);
     $args = array(
@@ -161,3 +161,50 @@ function agenda_load_events() {
 }
 add_action('wp_ajax_agenda_load_events', 'agenda_load_events');
 add_action('wp_ajax_nopriv_agenda_load_events', 'agenda_load_events');
+
+// Função para retornar as datas que possuem eventos
+function agenda_get_event_dates() {
+  $args = array(
+      'post_type' => 'agenda',
+      'posts_per_page' => -1,
+      'meta_key' => '_data_evento',
+      'orderby' => 'meta_value',
+      'order' => 'ASC',
+  );
+  $query = new WP_Query($args);
+  $event_dates = array();
+
+  if ($query->have_posts()) {
+      while ($query->have_posts()) {
+          $query->the_post();
+          $event_date = get_post_meta(get_the_ID(), '_data_evento', true);
+          if (!in_array($event_date, $event_dates)) {
+              $event_dates[] = $event_date;
+          }
+      }
+  }
+  wp_reset_postdata();
+
+  return $event_dates;
+}
+
+// Função para passar as datas com eventos para o JavaScript
+function agenda_localize_event_dates() {
+  $event_dates = agenda_get_event_dates();
+  wp_localize_script('agenda-script', 'agenda_event_dates', $event_dates);
+}
+add_action('wp_enqueue_scripts', 'agenda_localize_event_dates');
+
+// Adiciona estilos personalizados
+function agenda_enqueue_styles() {
+  echo '
+  <style>
+      .flatpickr-day.event-day {
+          background-color: #4CAF50; /* Cor de fundo para dias com eventos */
+          color: white; /* Cor do texto */
+          border-radius: 50%; /* Formato circular */
+      }
+  </style>
+  ';
+}
+add_action('wp_head', 'agenda_enqueue_styles');
